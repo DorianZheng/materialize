@@ -21,7 +21,7 @@ use repr::adt::decimal::Significand;
 use repr::adt::regex::Regex as ReprRegex;
 use repr::{ColumnType, Datum, RelationType, Row, RowArena, ScalarType};
 
-use crate::scalar::func::jsonb_stringify;
+// use crate::scalar::func::jsonb::jsonb_stringify;
 
 // TODO(jamii) be careful about overflow in sum/avg
 // see https://timely.zulipchat.com/#narrow/stream/186635-engineering/topic/additional.20work/near/163507435
@@ -498,9 +498,9 @@ fn jsonb_each<'a>(a: Datum<'a>, temp_storage: &'a RowArena, stringify: bool) -> 
         Datum::Dict(dict) => dict
             .iter()
             .map(move |(k, mut v)| {
-                if stringify {
-                    v = jsonb_stringify(v, temp_storage);
-                }
+                // if stringify {
+                //     v = jsonb_stringify(v, temp_storage);
+                // }
                 row_packer.pack(&[Datum::String(k), v])
             })
             .collect(),
@@ -525,9 +525,9 @@ fn jsonb_array_elements<'a>(a: Datum<'a>, temp_storage: &'a RowArena, stringify:
         Datum::List(list) => list
             .iter()
             .map(move |mut e| {
-                if stringify {
-                    e = jsonb_stringify(e, temp_storage);
-                }
+                // if stringify {
+                //     e = jsonb_stringify(e, temp_storage);
+                // }
                 row_packer.pack(&[e])
             })
             .collect(),

@@ -262,9 +262,9 @@ impl RelationExpr {
 
                     fn uniqueness(expr: &ScalarExpr) -> Option<usize> {
                         match expr {
-                            ScalarExpr::CallUnary { func, expr } => {
+                            ScalarExpr::Call { func, exprs } if exprs.len() == 1 => {
                                 if func.preserves_uniqueness() {
-                                    uniqueness(expr)
+                                    uniqueness(&exprs[0])
                                 } else {
                                     None
                                 }

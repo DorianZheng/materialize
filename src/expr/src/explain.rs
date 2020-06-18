@@ -369,23 +369,7 @@ impl std::fmt::Display for ScalarExpr {
             Column(i) => write!(f, "#{}", i)?,
             Literal(Ok(row), _) => write!(f, "{}", row.unpack_first())?,
             Literal(Err(e), _) => write!(f, "(err: {})", e)?,
-            CallNullary(func) => write!(f, "{}()", func)?,
-            CallUnary { func, expr } => {
-                write!(f, "{}({})", func, expr)?;
-            }
-            CallBinary { func, expr1, expr2 } => {
-                if func.is_infix_op() {
-                    write!(f, "({} {} {})", expr1, func, expr2)?;
-                } else {
-                    write!(f, "{}({}, {})", func, expr1, expr2)?;
-                }
-            }
-            CallVariadic { func, exprs } => {
-                write!(f, "{}({})", func, Separated(", ", exprs.clone()))?;
-            }
-            If { cond, then, els } => {
-                write!(f, "if {} then {{{}}} else {{{}}}", cond, then, els)?;
-            }
+            Call { func, exprs } => todo!(),
         }
         Ok(())
     }

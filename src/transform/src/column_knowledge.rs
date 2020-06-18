@@ -12,7 +12,7 @@
 use std::collections::HashMap;
 
 use crate::TransformArgs;
-use expr::{RelationExpr, ScalarExpr, UnaryFunc};
+use expr::{RelationExpr, ScalarExpr, ScalarFunc};
 use repr::Datum;
 use repr::{ColumnType, RelationType, ScalarType};
 
@@ -135,13 +135,13 @@ impl ColumnKnowledge {
                             }
                         }
                     }
-                    if let ScalarExpr::CallUnary {
-                        func: UnaryFunc::Not,
+                    if let ScalarExpr::Call {
+                        func: ScalarFunc::Not,
                         expr,
                     } = predicate
                     {
-                        if let ScalarExpr::CallUnary {
-                            func: UnaryFunc::IsNull,
+                        if let ScalarExpr::Call {
+                            func: ScalarFunc::IsNull,
                             expr,
                         } = &**expr
                         {
