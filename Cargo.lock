@@ -962,7 +962,7 @@ dependencies = [
  "enum-iterator",
  "failure",
  "num_enum",
- "ordered-float",
+ "ordered-float 2.0.0",
  "ore",
  "pdqselect",
  "regex",
@@ -1457,7 +1457,7 @@ dependencies = [
  "lazy_static",
  "log",
  "num-traits",
- "ordered-float",
+ "ordered-float 2.0.0",
  "ore",
  "protobuf",
  "protoc",
@@ -2118,6 +2118,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3741934be594d77de1c8461ebcbbe866f585ea616a9753aa78f2bdc69f0e4579"
 dependencies = [
  "num-traits",
+]
+
+[[package]]
+name = "ordered-float"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fe9037165d7023b1228bc4ae9a2fa1a2b0095eca6c2998c624723dfd01314a5"
+dependencies = [
+ "num-traits",
  "serde",
 ]
 
@@ -2269,7 +2278,7 @@ dependencies = [
  "lazy_static",
  "log",
  "openssl",
- "ordered-float",
+ "ordered-float 2.0.0",
  "ore",
  "pgrepr",
  "postgres",
@@ -2781,7 +2790,7 @@ dependencies = [
  "failure",
  "hex",
  "itertools",
- "ordered-float",
+ "ordered-float 2.0.0",
  "ore",
  "rand",
  "rand_chacha",
@@ -3104,7 +3113,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a65a7291a8a568adcae4c10a677ebcedbc6c9cec91c054dee2ce40b0e3290eb"
 dependencies = [
- "ordered-float",
+ "ordered-float 1.1.0",
  "serde",
 ]
 
