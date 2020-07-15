@@ -1,6 +1,7 @@
 // Copyright Materialize, Inc. All rights reserved.
 //
-// Use of this software is governed by the Busi{index:0,inner:Box::new(Value::Null), n_variants: (), null_variant: ()} LICENSE file.
+// Use of this software is governed by the Business Source License
+// included in the LICENSE file.
 //
 // As of the Change Date specified in that file, in accordance with
 // the Business Source License, use of this software will be governed
@@ -15,7 +16,7 @@ use chrono::{NaiveDate, NaiveDateTime};
 use failure::Fail;
 use serde_json::Value as JsonValue;
 
-use crate::schema::{RecordField, SchemaNode, SchemaPiece, SchemaPieceOrNamed};
+use crate::schema::{RecordField, SchemaNode, SchemaPiece};
 
 /// Describes errors happened while performing schema resolution on Avro data.
 #[derive(Fail, Debug)]
@@ -37,33 +38,6 @@ pub struct DecimalValue {
     pub unscaled: Vec<u8>,
     pub precision: usize,
     pub scale: usize,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)] // Can't be Eq because there are floats
-pub enum Scalar {
-    Null,
-    Boolean(bool),
-    Int(i32),
-    Long(i64),
-    Float(f32),
-    Double(f64),
-    Date(NaiveDate),
-    Timestamp(NaiveDateTime),
-}
-
-impl From<Scalar> for Value {
-    fn from(s: Scalar) -> Self {
-        match s {
-            Scalar::Null => Value::Null,
-            Scalar::Boolean(v) => Value::Boolean(v),
-            Scalar::Int(v) => Value::Int(v),
-            Scalar::Long(v) => Value::Long(v),
-            Scalar::Float(v) => Value::Float(v),
-            Scalar::Double(v) => Value::Double(v),
-            Scalar::Date(v) => Value::Date(v),
-            Scalar::Timestamp(v) => Value::Timestamp(v),
-        }
-    }
 }
 
 /// Represents any valid Avro value
@@ -110,17 +84,7 @@ pub enum Value {
     /// reading values.
     Enum(usize, String),
     /// An `union` Avro value.
-    Union {
-        /// The index of this variant in the reader schema
-        index: usize,
-        /// The value of the variant
-        inner: Box<Value>,
-        // The next two metadata fields are necessary for the Materialize "flattened unions" decoding strategy to work properly.
-        /// The number of variants in the reader schema
-        n_variants: usize,
-        /// Which variant is null in the reader schema.
-        null_variant: Option<usize>,
-    },
+    Union(usize, Box<Value>),
     /// An `array` Avro value.
     Array(Vec<Value>),
     /// A `map` Avro value.
@@ -353,28 +317,8 @@ impl Value {
                 .get(i as usize)
                 .map(|symbol| symbol == s)
                 .unwrap_or(false),
-            (
-                &Value::Union {
-                    index,
-                    ref inner,
-                    n_variants,
-                    null_variant,
-                },
-                SchemaPiece::Union(schema_inner),
-            ) => {
-                schema_inner.variants().len() > index
-                    && n_variants == schema_inner.variants().len()
-                    && inner.validate(schema.step(&schema_inner.variants()[index]))
-                    && match null_variant {
-                        None => !schema_inner
-                            .variants()
-                            .iter()
-                            .any(|v| v == &SchemaPieceOrNamed::Piece(SchemaPiece::Null)),
-                        Some(null_variant_idx) => {
-                            schema_inner.variants().get(null_variant_idx)
-                                == Some(&SchemaPieceOrNamed::Piece(SchemaPiece::Null))
-                        }
-                    }
+            (&Value::Union(idx, ref value), SchemaPiece::Union(inner)) => {
+                inner.variants().len() > idx && value.validate(schema.step(&inner.variants()[idx]))
             }
             (&Value::Array(ref items), SchemaPiece::Array(inner)) => {
                 let node = schema.step(&**inner);
@@ -409,7 +353,7 @@ impl Value {
     pub fn into_nullable_bool(self) -> Option<bool> {
         match self {
             Value::Boolean(b) => Some(b),
-            Value::Union { inner, .. } => inner.into_nullable_bool(),
+            Value::Union(_, v) => v.into_nullable_bool(),
             _ => None,
         }
     }
@@ -434,42 +378,22 @@ mod tests {
             (Value::Int(42), "\"int\"", true),
             (Value::Int(42), "\"boolean\"", false),
             (
-                Value::Union {
-                    index: 0,
-                    inner: Box::new(Value::Null),
-                    n_variants: 2,
-                    null_variant: Some(0),
-                },
+                Value::Union(0, Box::new(Value::Null)),
                 r#"["null", "int"]"#,
                 true,
             ),
             (
-                Value::Union {
-                    index: 1,
-                    inner: Box::new(Value::Int(42)),
-                    n_variants: 2,
-                    null_variant: Some(0),
-                },
+                Value::Union(1, Box::new(Value::Int(42))),
                 r#"["null", "int"]"#,
                 true,
             ),
             (
-                Value::Union {
-                    index: 1,
-                    inner: Box::new(Value::Null),
-                    n_variants: 2,
-                    null_variant: Some(1),
-                },
+                Value::Union(0, Box::new(Value::Null)),
                 r#"["double", "int"]"#,
                 false,
             ),
             (
-                Value::Union {
-                    index: 3,
-                    inner: Box::new(Value::Int(42)),
-                    n_variants: 4,
-                    null_variant: Some(0),
-                },
+                Value::Union(3, Box::new(Value::Int(42))),
                 r#"["null", "double", "string", "int"]"#,
                 true,
             ),
@@ -486,15 +410,9 @@ mod tests {
             (Value::Record(vec![]), "\"null\"", false),
         ];
 
-        for (value, schema_str, valid) in value_schema_valid.into_iter() {
-            let schema = Schema::parse_str(schema_str).unwrap();
-            assert_eq!(
-                valid,
-                value.validate(schema.top_node()),
-                "Schema failed to validate against value: {} {:#?}",
-                schema_str,
-                value
-            );
+        for (value, schema, valid) in value_schema_valid.into_iter() {
+            let schema = Schema::parse_str(schema).unwrap();
+            assert_eq!(valid, value.validate(schema.top_node()));
         }
     }
 

@@ -9,7 +9,7 @@
 
 //! Logic handling writing in Avro format at user level.
 use std::collections::HashMap;
-use std::io::{Seek, SeekFrom, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 
 use failure::{Error, Fail};
 use rand::random;
@@ -18,7 +18,7 @@ use crate::encode::{encode, encode_ref, encode_to_vec};
 use crate::reader::Block;
 use crate::schema::{Schema, SchemaPiece};
 use crate::types::{ToAvro, Value};
-use crate::{decode::AvroRead, Codec};
+use crate::Codec;
 
 const SYNC_SIZE: usize = 16;
 const SYNC_INTERVAL: usize = 1000 * SYNC_SIZE; // TODO: parametrize in Writer
@@ -89,7 +89,7 @@ impl<W: Write> Writer<W> {
     /// Creates a `Writer` that appends to an existing OCF file.
     pub fn append_to(file: W) -> Result<Writer<W>, Error>
     where
-        W: AvroRead + Seek + Unpin + Send,
+        W: Read + Seek + Unpin + Send,
     {
         let block = Block::new(file, None)?;
         let (mut file, schema, codec, marker) = block.into_parts();
@@ -383,12 +383,7 @@ mod tests {
     #[test]
     fn test_union() {
         let schema = Schema::parse_str(UNION_SCHEMA).unwrap();
-        let union = Value::Union {
-            index: 1,
-            inner: Box::new(Value::Long(3)),
-            n_variants: 2,
-            null_variant: Some(0),
-        };
+        let union = Value::Union(1, Box::new(Value::Long(3)));
 
         let mut expected = Vec::new();
         zig_i64(1, &mut expected);
